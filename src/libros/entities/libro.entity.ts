@@ -10,6 +10,9 @@ export class Libro{
 
     @Column()
     nombre: string;
+    
+    @Column()
+    autorId: number;
 
     @ManyToOne(() => Autore, autor => autor.Libros)
     autor: Autore

@@ -1,36 +1,74 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateAutoreDto } from './dto/create-autore.dto';
 import { UpdateAutoreDto } from './dto/update-autore.dto';
 import { Autore } from './entities/autore.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 
+
 @Injectable()
 export class AutoresService {
   constructor(
     @InjectRepository(Autore)
     private readonly autorRepository: Repository<Autore>,
-  ){}
+  ) { }
 
-  create(createAutoreDto: CreateAutoreDto) {
-    return  this.autorRepository.save(createAutoreDto);
+  async create(createAutoreDto: CreateAutoreDto): Promise<Autore> {
+    return this.autorRepository.save(createAutoreDto);
   }
 
-  async findAll() {
+  async findAll(page: number = 1, limit: number = +process.env.LIMIT): Promise<Autore[]> {
+    const skip = (page - 1) * limit;
     return this.autorRepository.find({
-      select: {}
+      skip,
+      take: limit,
     });
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} autore`;
+    return this.autorRepository.findOne({
+      where: { id },
+      select: {
+        id: true,
+        nombre: true,
+      },
+    });
   }
 
-  update(id: number, updateAutoreDto: UpdateAutoreDto) {
-    return `This action updates a #${id} autore`;
+  async findOneWithBooks(id: number): Promise<Autore> {
+    const autor = await this.autorRepository.findOne({
+      where: { id },
+      relations: ['Libros'],
+    });
+    console.log(autor);
+    
+
+    if (!autor) {
+      throw new NotFoundException(`Autor con ID ${id} no encontrado`);
+    }
+
+    return autor;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} autore`;
+  async update(id: number, updateAutoreDto: UpdateAutoreDto): Promise<Autore> {
+    const result = await this.autorRepository.update(id, updateAutoreDto);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Autor con ID ${id} no encontrado`);
+    }
+
+    const dataUpdated = this.autorRepository.findOneBy({ id })
+    return dataUpdated
+  }
+
+  async remove(id: number): Promise<{ message: String }> {
+    const result = await this.autorRepository.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Autor con ID ${id} no encontrado`);
+    }
+
+    return {
+      message: "autor deleted successfully"
+    }
   }
 }

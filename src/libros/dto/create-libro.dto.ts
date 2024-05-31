@@ -8,9 +8,5 @@ export class CreateLibroDto {
 
     @IsNumber()
     @IsNotEmpty()
-    id_libro: number;
-
-    @IsNumber()
-    @IsNotEmpty()
-    id_venta: number;
+    autorId: number;    
 }
