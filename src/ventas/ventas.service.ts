@@ -4,16 +4,30 @@ import { UpdateVentaDto } from './dto/update-venta.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Venta } from './entities/venta.entity';
 import { Repository } from 'typeorm';
+import { Libro } from 'src/libros/entities/libro.entity';
 
 @Injectable()
 export class VentasService {
   constructor(
   @InjectRepository(Venta)
   private readonly ventaRepository: Repository<Venta>,
+
+  @InjectRepository(Libro)
+  private readonly libroRepository: Repository<Libro>,
   ){}
 
   async create(createVentaDto: CreateVentaDto): Promise<Venta> {
-    return  this.ventaRepository.save(createVentaDto);
+    const libro = await this.libroRepository.findOneBy({ id: createVentaDto.idLibro});
+    if (!libro) {
+      throw new NotFoundException('Libro not found');
+    }
+
+    const venta = this.ventaRepository.create({
+      ...createVentaDto,
+      libro
+    });
+
+    return this.ventaRepository.save(venta);
   }
 
   async findAll(page: number = 1, limit: number = +process.env.LIMIT): Promise<Venta[]> {

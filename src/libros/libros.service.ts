@@ -4,6 +4,7 @@ import { UpdateLibroDto } from './dto/update-libro.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Libro } from './entities/libro.entity';
+import { Autore } from 'src/autores/entities/autore.entity';
 
 @Injectable()
 export class LibrosService {
@@ -12,10 +13,24 @@ export class LibrosService {
     @InjectRepository(Libro)
     private readonly libroRepository: Repository<Libro>,
 
+    @InjectRepository(Autore)
+    private readonly autorRepository: Repository<Autore>,
+
   ) { }
 
   async create(createLibroDto: CreateLibroDto): Promise<Libro> {
-    return this.libroRepository.save(createLibroDto);
+
+    const autor = await this.autorRepository.findOneBy({ id: createLibroDto.authorId, deletedAt: null });
+    if (!autor) {
+      throw new NotFoundException('Author not found');
+    }
+
+    const book = this.libroRepository.create({
+      ...createLibroDto,
+      autor
+    });
+
+    return this.libroRepository.save(book);
   }
 
   async findAll(page: number = 1, limit: number = +process.env.LIMIT): Promise<Libro[]> {
@@ -23,6 +38,8 @@ export class LibrosService {
     return this.libroRepository.find({
       skip,
       take: limit,
+      where: { deletedAt: null },
+      relations: ['autor'],
     });
   }
 
@@ -43,7 +60,7 @@ export class LibrosService {
     });
 
     console.log(autor);
-    
+
 
     if (!autor) {
       throw new NotFoundException(`Autor con ID ${id} no encontrado`);
@@ -64,15 +81,31 @@ export class LibrosService {
   }
 
 
-  async remove(id: number): Promise<{ message: String }> {
-    const result = await this.libroRepository.delete(id);
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`libro con ID ${id} no encontrado`);
+  async remove(id: number) {
+    const libro = await this.libroRepository.findOne({ where: { id } });
+    if (!libro) {
+      throw new NotFoundException('Libro not found');
     }
 
-    return {
-      message: "libro deleted successfully"
+    console.log(libro);
+    
+    // Mark the libro as deleted
+    await this.libroRepository.softRemove(libro);
+
+    // Ensure the deletedAt date is set correctly
+    await this.libroRepository.update(id, { deletedAt: new Date() });
+
+    // Update the related author if needed
+    const autor = await this.autorRepository.findOne({
+      where: { id: libro.id, deletedAt: null },
+      relations: ['Libros']
+    });
+
+    console.log(autor);
+    
+    if (autor) {
+      autor.Libros = autor.Libros.map(lib => lib.id === id ? { ...lib, deletedAt: new Date() } : lib);
+      await this.autorRepository.save(autor);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsString } from "class-validator";
+import { IsInt, IsNotEmpty, IsNumber, IsString } from "class-validator";
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateVentaDto {
@@ -6,7 +6,7 @@ export class CreateVentaDto {
     @IsNotEmpty()
     precioTotal: string;
 
-    @IsNumber()
+    @IsInt()
     @IsNotEmpty()
     idLibro: number;
 }

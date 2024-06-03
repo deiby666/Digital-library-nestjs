@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseInterceptors, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseInterceptors, NotFoundException, UseGuards } from '@nestjs/common';
 import { VentasService } from './ventas.service';
 import { CreateVentaDto } from './dto/create-venta.dto';
 import { UpdateVentaDto } from './dto/update-venta.dto';
-import { HorarioVentaInterceptor } from './interceptors/interceptor.date';
 import { Venta } from './entities/venta.entity';
+import { validateHour } from './guards/validateHour.guard';
 
 
 @Controller('ventas')
@@ -12,9 +12,8 @@ export class VentasController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(HorarioVentaInterceptor)
-  create(@Body() createVentaDto: CreateVentaDto) {
-    console.log(createVentaDto);   
+  @UseGuards(validateHour)
+  create(@Body() createVentaDto: CreateVentaDto) { 
     return this.ventasService.create(createVentaDto);
   }
 

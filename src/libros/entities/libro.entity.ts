@@ -1,4 +1,4 @@
-import { Column, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn} from "typeorm";
+import { Column, DeleteDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn} from "typeorm";
 import { Autore } from "src/autores/entities/autore.entity";
 import { Venta } from "src/ventas/entities/venta.entity";
 
@@ -11,12 +11,14 @@ export class Libro{
     @Column()
     nombre: string;
     
-    @Column()
-    autorId: number;
-
     @ManyToOne(() => Autore, autor => autor.Libros)
+    @JoinColumn({name: 'authorId'})
     autor: Autore
 
     @OneToMany(() => Venta, venta => venta.libro)
+    @JoinColumn()
     ventas: Venta[]
+
+    @DeleteDateColumn()
+    deletedAt: Date;
 }
